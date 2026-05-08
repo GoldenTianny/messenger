@@ -25,27 +25,28 @@ function renderPreviews() {
 
   if (selectedFiles.length === 0) {
     imagePreview.hidden = true;
-    return;
-  }
-  imagePreview.hidden = false;
-  selectedFiles.forEach(file => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'preview-item';
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'preview-clear';
-    btn.textContent = '×';
-    btn.setAttribute('aria-label', '사진 제거');
-    btn.addEventListener('click', () => {
-      selectedFiles = selectedFiles.filter(f => f !== file);
-      renderPreviews();
+  } else {
+    imagePreview.hidden = false;
+    selectedFiles.forEach(file => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'preview-item';
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'preview-clear';
+      btn.textContent = '×';
+      btn.setAttribute('aria-label', '사진 제거');
+      btn.addEventListener('click', () => {
+        selectedFiles = selectedFiles.filter(f => f !== file);
+        renderPreviews();
+      });
+      wrapper.appendChild(img);
+      wrapper.appendChild(btn);
+      imagePreview.appendChild(wrapper);
     });
-    wrapper.appendChild(img);
-    wrapper.appendChild(btn);
-    imagePreview.appendChild(wrapper);
-  });
+  }
+  requestAnimationFrame(scrollToBottom);
 }
 
 function clearPreview() {
