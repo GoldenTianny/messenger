@@ -19,6 +19,7 @@ drop function if exists public.is_admin() cascade;
 drop function if exists public.is_member(uuid) cascade;
 drop function if exists public.shares_conversation(uuid) cascade;
 drop function if exists public.redeem_invitation(text) cascade;
+drop function if exists public.create_invitation() cascade;
 drop function if exists public.update_conversation_last_message() cascade;
 drop table if exists public.invitations cascade;
 drop table if exists public.conversation_members cascade;
@@ -202,7 +203,37 @@ create trigger on_message_inserted
   after insert on public.messages
   for each row execute function public.update_conversation_last_message();
 
--- ── 6. 초대 링크 사용 (서버 함수로 원자적 처리) ───────────────────────
+-- ── 6. 초대 링크 생성 (대화방+멤버+토큰을 원자적으로 처리) ─────────────
+
+create or replace function public.create_invitation()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_conv_id uuid;
+  new_token text;
+begin
+  if auth.uid() is null then
+    raise exception '로그인이 필요합니다';
+  end if;
+
+  insert into public.conversations default values
+  returning id into new_conv_id;
+
+  insert into public.conversation_members (conversation_id, user_id)
+  values (new_conv_id, auth.uid());
+
+  insert into public.invitations (conversation_id, created_by)
+  values (new_conv_id, auth.uid())
+  returning token into new_token;
+
+  return new_token;
+end;
+$$;
+
+-- ── 7. 초대 링크 사용 (서버 함수로 원자적 처리) ───────────────────────
 
 -- 토큰으로 호출하면 호출자를 멤버로 추가하고 conversation_id 반환.
 -- 만료/사용된 토큰이면 예외.
@@ -265,7 +296,7 @@ begin
 end;
 $$;
 
--- ── 7. Realtime 활성화 (이미 등록되어 있으면 패스) ──────────────────
+-- ── 8. Realtime 활성화 (이미 등록되어 있으면 패스) ──────────────────
 
 do $$
 begin
@@ -277,7 +308,7 @@ begin
   exception when duplicate_object then null; end;
 end$$;
 
--- ── 8. Storage (사진 업로드용) ────────────────────────────────────────
+-- ── 9. Storage (사진 업로드용) ────────────────────────────────────────
 
 insert into storage.buckets (id, name, public)
 values ('chat-images', 'chat-images', true)

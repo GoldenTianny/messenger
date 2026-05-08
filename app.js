@@ -298,34 +298,15 @@ function setFormDisabled(b) {
 }
 
 // === 초대 링크 생성 ===
+// 대화방 생성 + 본인 멤버 등록 + 초대 토큰 발행을 서버 함수로 원자적 처리
 inviteBtn.addEventListener('click', async () => {
   inviteBtn.disabled = true;
   try {
-    // 새 대화방 생성
-    const { data: newConv, error: convErr } = await sb
-      .from('conversations')
-      .insert({})
-      .select('id')
-      .single();
-    if (convErr) { alert('대화방 생성 실패: ' + convErr.message); return; }
+    const { data: token, error } = await sb.rpc('create_invitation');
+    if (error) { alert('초대 링크 생성 실패: ' + error.message); return; }
 
-    // 본인을 멤버로 추가
-    const { error: memErr } = await sb
-      .from('conversation_members')
-      .insert({ conversation_id: newConv.id, user_id: currentUser.id });
-    if (memErr) { alert('멤버 등록 실패: ' + memErr.message); return; }
-
-    // 초대 토큰 생성
-    const { data: inv, error: invErr } = await sb
-      .from('invitations')
-      .insert({ conversation_id: newConv.id, created_by: currentUser.id })
-      .select('token')
-      .single();
-    if (invErr) { alert('초대 링크 생성 실패: ' + invErr.message); return; }
-
-    // 링크 표시
     const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-    inviteLinkInput.value = `${baseUrl}?invite=${inv.token}`;
+    inviteLinkInput.value = `${baseUrl}?invite=${token}`;
     inviteModal.hidden = false;
 
     await loadConversations();
