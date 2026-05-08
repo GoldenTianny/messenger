@@ -7,6 +7,31 @@ const form = document.getElementById('chat-form');
 const textInput = document.getElementById('text-input');
 const imageInput = document.getElementById('image-input');
 const logoutBtn = document.getElementById('logout-btn');
+const imagePreview = document.getElementById('image-preview');
+const previewImg = document.getElementById('preview-img');
+const previewClear = document.getElementById('preview-clear');
+
+function clearPreview() {
+  imageInput.value = '';
+  if (previewImg.src && previewImg.src.startsWith('blob:')) {
+    URL.revokeObjectURL(previewImg.src);
+  }
+  previewImg.removeAttribute('src');
+  imagePreview.hidden = true;
+}
+
+imageInput.addEventListener('change', () => {
+  const file = imageInput.files[0];
+  if (file) {
+    if (previewImg.src && previewImg.src.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImg.src);
+    }
+    previewImg.src = URL.createObjectURL(file);
+    imagePreview.hidden = false;
+  }
+});
+
+previewClear.addEventListener('click', clearPreview);
 
 (async function init() {
   currentUser = await requireAuth('client');
@@ -107,7 +132,7 @@ form.addEventListener('submit', async (e) => {
   if (file) {
     setFormDisabled(true);
     imageUrl = await uploadImage(file, currentUser.id);
-    imageInput.value = '';
+    clearPreview();
     setFormDisabled(false);
     if (!imageUrl) return;
   }

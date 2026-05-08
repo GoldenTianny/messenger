@@ -14,6 +14,31 @@ const headerName = document.getElementById('admin-chat-header-name');
 const logoutBtn = document.getElementById('admin-logout-btn');
 const backBtn = document.getElementById('admin-back-btn');
 const emptyEl = document.getElementById('admin-empty-msg');
+const imagePreview = document.getElementById('admin-image-preview');
+const previewImg = document.getElementById('admin-preview-img');
+const previewClear = document.getElementById('admin-preview-clear');
+
+function clearPreview() {
+  imageInput.value = '';
+  if (previewImg.src && previewImg.src.startsWith('blob:')) {
+    URL.revokeObjectURL(previewImg.src);
+  }
+  previewImg.removeAttribute('src');
+  imagePreview.hidden = true;
+}
+
+imageInput.addEventListener('change', () => {
+  const file = imageInput.files[0];
+  if (file) {
+    if (previewImg.src && previewImg.src.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImg.src);
+    }
+    previewImg.src = URL.createObjectURL(file);
+    imagePreview.hidden = false;
+  }
+});
+
+previewClear.addEventListener('click', clearPreview);
 
 (async function init() {
   currentUser = await requireAuth('admin');
@@ -158,7 +183,7 @@ form.addEventListener('submit', async (e) => {
   if (file) {
     setFormDisabled(true);
     imageUrl = await uploadImage(file, currentUser.id);
-    imageInput.value = '';
+    clearPreview();
     setFormDisabled(false);
     if (!imageUrl) return;
   }
