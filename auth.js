@@ -14,7 +14,7 @@ let isSignup = false;
 (async () => {
   const user = await getCurrentUser();
   if (user) {
-    window.location.href = user.profile.role === 'admin' ? 'admin.html' : 'chat.html';
+    window.location.href = 'app.html' + window.location.search;
   }
 })();
 
@@ -84,5 +84,5 @@ form.addEventListener('submit', async (e) => {
 async function routeUser() {
   const user = await getCurrentUser();
   if (!user) return;
-  window.location.href = user.profile.role === 'admin' ? 'admin.html' : 'chat.html';
+  window.location.href = 'app.html' + window.location.search;
 }

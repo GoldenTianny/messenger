@@ -23,6 +23,7 @@ body {
 }
 input, button, textarea { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; }
+[hidden] { display: none !important; }
 
 /* AUTH */
 .auth-container {
@@ -84,19 +85,45 @@ button[type="submit"]:disabled { opacity: 0.6; }
   margin-left: 4px;
 }
 
-/* CHAT 공용 */
-.chat-body, .admin-body {
+/* APP LAYOUT */
+.app-body {
   display: flex;
   height: 100vh;
   height: 100dvh;
   background: var(--bg);
 }
-.chat-body { flex-direction: column; }
-
-.chat-header, .admin-chat-header {
+.app-sidebar {
+  width: 320px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.app-sidebar-header {
+  padding: 0 16px;
+  height: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.app-sidebar-header h1 { font-size: 18px; font-weight: 600; }
+.sidebar-actions { display: flex; gap: 4px; }
+.app-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* HEADER (sidebar 우측 채팅 영역 위) */
+.chat-header {
+  display: flex;
+  align-items: center;
   padding: 0 16px;
   height: calc(var(--header-h) + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top);
@@ -104,7 +131,7 @@ button[type="submit"]:disabled { opacity: 0.6; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.chat-header .title, .admin-chat-header .title {
+.chat-header .title {
   font-weight: 600;
   font-size: 17px;
 }
@@ -112,10 +139,42 @@ button[type="submit"]:disabled { opacity: 0.6; }
   background: none;
   border: 0;
   color: var(--primary);
-  font-size: 15px;
-  padding: 8px;
+  font-size: 14px;
+  padding: 6px 8px;
+}
+#back-btn {
+  display: none;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  font-size: 22px;
+  margin-right: 8px;
+  padding: 4px 8px;
 }
 
+/* CONVERSATION LIST */
+.conv-list { flex: 1; overflow-y: auto; }
+.conv-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.conv-item:hover { background: var(--bg); }
+.conv-item.active { background: #e7f0ff; }
+.conv-name { font-weight: 600; font-size: 15px; }
+.conv-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.conv-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* MESSAGES */
 .chat-main {
   flex: 1;
   overflow-y: auto;
@@ -124,6 +183,17 @@ button[type="submit"]:disabled { opacity: 0.6; }
   flex-direction: column;
   gap: 12px;
   -webkit-overflow-scrolling: touch;
+}
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 32px;
+  line-height: 1.6;
 }
 .msg {
   display: flex;
@@ -168,6 +238,7 @@ button[type="submit"]:disabled { opacity: 0.6; }
   padding: 0 4px;
 }
 
+/* INPUT BAR */
 .chat-input {
   display: flex;
   flex-direction: column;
@@ -183,7 +254,6 @@ button[type="submit"]:disabled { opacity: 0.6; }
   align-items: center;
   gap: 8px;
 }
-[hidden] { display: none !important; }
 .image-preview {
   display: flex;
   flex-wrap: wrap;
@@ -252,76 +322,78 @@ button[type="submit"]:disabled { opacity: 0.6; }
   font-size: 14px;
 }
 
-/* ADMIN */
-.admin-sidebar {
-  width: 320px;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-.admin-sidebar-header {
-  padding: 0 16px;
-  height: calc(var(--header-h) + env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.admin-sidebar-header h1 { font-size: 18px; font-weight: 600; }
-.conv-list { flex: 1; overflow-y: auto; }
-.conv-item {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-}
-.conv-item:hover { background: var(--bg); }
-.conv-item.active { background: #e7f0ff; }
-.conv-name { font-weight: 600; font-size: 15px; }
-.conv-time {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-.conv-empty {
-  padding: 32px 16px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.admin-chat-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-#admin-back-btn {
-  display: none;
-  background: none;
-  border: 0;
-  color: var(--primary);
-  font-size: 22px;
-  margin-right: 8px;
-  padding: 4px 8px;
-}
-.admin-empty {
-  flex: 1;
+/* MODAL (초대 링크) */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  padding: 16px;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.modal-content {
+  position: relative;
+  background: var(--surface);
+  border-radius: 14px;
+  max-width: 400px;
+  width: 100%;
+  padding: 24px 20px 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+.modal-content h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.modal-content p {
   font-size: 14px;
-  padding: 32px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.invite-link-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.invite-link-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+}
+.invite-link-box button {
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.modal-close {
+  display: block;
+  margin: 0 auto;
+  font-size: 14px;
 }
 
+/* MOBILE */
 @media (max-width: 720px) {
-  .admin-body { position: relative; overflow: hidden; }
-  .admin-sidebar { width: 100%; }
-  .admin-chat-area {
+  .app-body { position: relative; overflow: hidden; }
+  .app-sidebar { width: 100%; }
+  .app-chat-area {
     position: absolute;
     inset: 0;
     background: var(--bg);
@@ -329,6 +401,6 @@ button[type="submit"]:disabled { opacity: 0.6; }
     transition: transform 0.2s ease;
     z-index: 2;
   }
-  body.admin-chat-open .admin-chat-area { transform: translateX(0); }
-  #admin-back-btn { display: block; }
+  body.chat-open .app-chat-area { transform: translateX(0); }
+  #back-btn { display: block; }
 }

@@ -85,14 +85,10 @@ async function getCurrentUser() {
   return { id: session.user.id, email: session.user.email, profile };
 }
 
-async function requireAuth(expectedRole) {
+async function requireAuth() {
   const user = await getCurrentUser();
   if (!user) {
-    window.location.href = 'index.html';
-    return null;
-  }
-  if (expectedRole && user.profile.role !== expectedRole) {
-    window.location.href = user.profile.role === 'admin' ? 'admin.html' : 'chat.html';
+    window.location.href = 'index.html' + window.location.search;
     return null;
   }
   return user;
