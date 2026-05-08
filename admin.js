@@ -233,7 +233,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 function setFormDisabled(b) {
-  form.querySelectorAll('button, input').forEach(el => el.disabled = b);
+  form.querySelectorAll('button, input[type="file"]').forEach(el => el.disabled = b);
 }
 
 logoutBtn.addEventListener('click', async () => {
