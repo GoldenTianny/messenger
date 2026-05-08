@@ -8,30 +8,49 @@ const textInput = document.getElementById('text-input');
 const imageInput = document.getElementById('image-input');
 const logoutBtn = document.getElementById('logout-btn');
 const imagePreview = document.getElementById('image-preview');
-const previewImg = document.getElementById('preview-img');
-const previewClear = document.getElementById('preview-clear');
+let selectedFiles = [];
+
+function renderPreviews() {
+  imagePreview.querySelectorAll('img').forEach(img => {
+    if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+  });
+  imagePreview.innerHTML = '';
+
+  if (selectedFiles.length === 0) {
+    imagePreview.hidden = true;
+    return;
+  }
+  imagePreview.hidden = false;
+  selectedFiles.forEach(file => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-item';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'preview-clear';
+    btn.textContent = '×';
+    btn.setAttribute('aria-label', '사진 제거');
+    btn.addEventListener('click', () => {
+      selectedFiles = selectedFiles.filter(f => f !== file);
+      renderPreviews();
+    });
+    wrapper.appendChild(img);
+    wrapper.appendChild(btn);
+    imagePreview.appendChild(wrapper);
+  });
+}
 
 function clearPreview() {
   imageInput.value = '';
-  if (previewImg.src && previewImg.src.startsWith('blob:')) {
-    URL.revokeObjectURL(previewImg.src);
-  }
-  previewImg.removeAttribute('src');
-  imagePreview.hidden = true;
+  selectedFiles = [];
+  renderPreviews();
 }
 
 imageInput.addEventListener('change', () => {
-  const file = imageInput.files[0];
-  if (file) {
-    if (previewImg.src && previewImg.src.startsWith('blob:')) {
-      URL.revokeObjectURL(previewImg.src);
-    }
-    previewImg.src = URL.createObjectURL(file);
-    imagePreview.hidden = false;
-  }
+  selectedFiles = Array.from(imageInput.files);
+  renderPreviews();
 });
-
-previewClear.addEventListener('click', clearPreview);
 
 (async function init() {
   currentUser = await requireAuth('client');
@@ -122,35 +141,43 @@ function subscribeMessages() {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = textInput.value.trim();
-  const file = imageInput.files[0];
-  if (!text && !file) return;
+  const filesToSend = selectedFiles.slice();
+  if (!text && filesToSend.length === 0) return;
 
   textInput.value = '';
   textInput.focus();
+  clearPreview();
 
-  let imageUrl = null;
-  if (file) {
-    setFormDisabled(true);
-    imageUrl = await uploadImage(file, currentUser.id);
-    clearPreview();
+  setFormDisabled(true);
+  try {
+    if (text) {
+      const { error } = await sb.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: currentUser.id,
+        body: text,
+        image_url: null
+      });
+      if (error) { alert('전송 실패: ' + error.message); return; }
+    }
+
+    for (const file of filesToSend) {
+      const imageUrl = await uploadImage(file, currentUser.id);
+      if (!imageUrl) continue;
+      const { error } = await sb.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: currentUser.id,
+        body: null,
+        image_url: imageUrl
+      });
+      if (error) console.error('이미지 메시지 실패:', error);
+    }
+
+    await sb.from('conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+  } finally {
     setFormDisabled(false);
-    if (!imageUrl) return;
   }
-
-  const { error } = await sb.from('messages').insert({
-    conversation_id: conversationId,
-    sender_id: currentUser.id,
-    body: text || null,
-    image_url: imageUrl
-  });
-  if (error) {
-    alert('전송 실패: ' + error.message);
-    return;
-  }
-
-  await sb.from('conversations')
-    .update({ last_message_at: new Date().toISOString() })
-    .eq('id', conversationId);
 });
 
 function setFormDisabled(b) {

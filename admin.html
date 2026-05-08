@@ -26,13 +26,10 @@
     <div class="admin-empty" id="admin-empty-msg">왼쪽 목록에서 대화를 선택하세요</div>
   </main>
   <form class="chat-input" id="admin-chat-form">
-    <div class="image-preview" id="admin-image-preview" hidden>
-      <img id="admin-preview-img" alt="">
-      <button type="button" class="preview-clear" id="admin-preview-clear" aria-label="사진 제거">×</button>
-    </div>
+    <div class="image-preview" id="admin-image-preview" hidden></div>
     <div class="input-row">
       <label class="image-btn" for="admin-image-input" aria-label="사진 첨부">+</label>
-      <input type="file" id="admin-image-input" accept="image/*" hidden>
+      <input type="file" id="admin-image-input" accept="image/*" multiple hidden>
       <input type="text" id="admin-text-input" placeholder="메시지 입력" autocomplete="off">
       <button type="submit" class="send-btn">전송</button>
     </div>

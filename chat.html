@@ -16,13 +16,10 @@
 </header>
 <main class="chat-main" id="messages"></main>
 <form class="chat-input" id="chat-form">
-  <div class="image-preview" id="image-preview" hidden>
-    <img id="preview-img" alt="">
-    <button type="button" class="preview-clear" id="preview-clear" aria-label="사진 제거">×</button>
-  </div>
+  <div class="image-preview" id="image-preview" hidden></div>
   <div class="input-row">
     <label class="image-btn" for="image-input" aria-label="사진 첨부">+</label>
-    <input type="file" id="image-input" accept="image/*" hidden>
+    <input type="file" id="image-input" accept="image/*" multiple hidden>
     <input type="text" id="text-input" placeholder="메시지 입력" autocomplete="off">
     <button type="submit" class="send-btn">전송</button>
   </div>
