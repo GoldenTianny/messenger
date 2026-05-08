@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>채팅</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="chat-body">
+<header class="chat-header">
+  <span class="title">관리자</span>
+  <button id="logout-btn" class="text-btn">로그아웃</button>
+</header>
+<main class="chat-main" id="messages"></main>
+<form class="chat-input" id="chat-form">
+  <label class="image-btn" for="image-input" aria-label="사진 첨부">+</label>
+  <input type="file" id="image-input" accept="image/*" hidden>
+  <input type="text" id="text-input" placeholder="메시지 입력" autocomplete="off">
+  <button type="submit" class="send-btn">전송</button>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="chat.js"></script>
+</body>
+</html>

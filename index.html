@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>메신저 로그인</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-container">
+  <h1 id="auth-title">로그인</h1>
+  <form id="auth-form">
+    <div class="field" id="name-field" style="display:none;">
+      <label for="display-name">닉네임</label>
+      <input type="text" id="display-name" autocomplete="nickname">
+    </div>
+    <div class="field">
+      <label for="email">이메일</label>
+      <input type="email" id="email" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="password">비밀번호 (6자 이상)</label>
+      <input type="password" id="password" required minlength="6" autocomplete="current-password">
+    </div>
+    <button type="submit" id="submit-btn">로그인</button>
+    <p class="error" id="error-msg"></p>
+  </form>
+  <p class="toggle">
+    <span id="toggle-text">계정이 없으신가요?</span>
+    <a href="#" id="toggle-link">회원가입</a>
+  </p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

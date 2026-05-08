@@ -1,0 +1,10 @@
+{
+  "name": "프라이빗 메신저",
+  "short_name": "메신저",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007aff",
+  "lang": "ko"
+}
