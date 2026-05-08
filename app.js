@@ -57,35 +57,38 @@ async function redeemInvite(token) {
 }
 
 async function loadConversations() {
-  // 내가 멤버인 대화방 목록
-  const { data: myMemberships, error: memErr } = await sb
-    .from('conversation_members')
-    .select('conversation_id')
-    .eq('user_id', currentUser.id);
-  if (memErr) { console.error(memErr); return; }
-
-  if (!myMemberships || myMemberships.length === 0) {
-    conversations = [];
-    renderConversations();
-    return;
-  }
-
-  const convIds = myMemberships.map(m => m.conversation_id);
-
+  // RLS가 자동 필터링: 일반 사용자는 본인 대화만, 관리자는 모든 대화
   const { data: convs, error: convErr } = await sb
     .from('conversations')
     .select('id, last_message_at, conversation_members(user_id, profiles(display_name))')
-    .in('id', convIds)
     .order('last_message_at', { ascending: false });
   if (convErr) { console.error(convErr); return; }
 
   conversations = (convs || []).map(c => {
-    const partner = (c.conversation_members || []).find(m => m.user_id !== currentUser.id);
+    const members = c.conversation_members || [];
+    const myMember = members.find(m => m.user_id === currentUser.id);
+    const isMember = !!myMember;
+    let displayName;
+    let isPending = false;
+    if (isMember) {
+      const partner = members.find(m => m.user_id !== currentUser.id);
+      if (!partner) {
+        displayName = '(상대방 대기 중)';
+        isPending = true;
+      } else {
+        displayName = partner.profiles?.display_name || '(이름 없음)';
+      }
+    } else {
+      // 관리자 열람 모드 — 본인이 아닌 대화방
+      const names = members.map(m => m.profiles?.display_name).filter(Boolean);
+      displayName = names.length ? names.join(' ↔ ') : '(빈 대화방)';
+    }
     return {
       id: c.id,
       last_message_at: c.last_message_at,
-      partner_name: partner?.profiles?.display_name || null,
-      is_pending: !partner
+      display_name: displayName,
+      is_member: isMember,
+      is_pending: isPending
     };
   });
 
@@ -104,9 +107,9 @@ function renderConversations() {
   conversations.forEach(c => {
     const item = document.createElement('div');
     item.className = 'conv-item' + (c.id === activeConversationId ? ' active' : '');
-    const displayName = c.is_pending ? '(상대방 대기 중)' : c.partner_name;
+    if (!c.is_member) item.classList.add('readonly');
     item.innerHTML = `
-      <div class="conv-name">${escapeHtml(displayName)}</div>
+      <div class="conv-name">${escapeHtml(c.display_name)}</div>
       <div class="conv-time">${formatRelative(c.last_message_at)}</div>
     `;
     item.addEventListener('click', () => openConversation(c.id));
@@ -117,8 +120,9 @@ function renderConversations() {
 async function openConversation(id) {
   activeConversationId = id;
   const conv = conversations.find(c => c.id === id);
-  headerName.textContent = conv?.is_pending ? '(상대방 대기 중)' : (conv?.partner_name || '');
+  headerName.textContent = conv?.display_name || '';
   document.body.classList.add('chat-open');
+  document.body.classList.toggle('readonly-view', !!(conv && !conv.is_member));
   if (emptyStateEl && emptyStateEl.parentNode) emptyStateEl.remove();
   renderConversations();
   await loadMessages();

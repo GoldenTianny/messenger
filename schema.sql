@@ -16,6 +16,7 @@ drop trigger if exists on_auth_user_created on auth.users;
 -- on_message_inserted 트리거는 messages 테이블이 cascade 로 drop 될 때 자동 제거됨
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.is_admin() cascade;
+drop function if exists public.is_admin_user() cascade;
 drop function if exists public.is_member(uuid) cascade;
 drop function if exists public.shares_conversation(uuid) cascade;
 drop function if exists public.redeem_invitation(text) cascade;
@@ -32,6 +33,7 @@ drop table if exists public.profiles cascade;
 create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   display_name text not null,
+  is_admin boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -92,6 +94,17 @@ as $$
   );
 $$;
 
+-- 현재 사용자가 관리자인지 확인
+create or replace function public.is_admin_user()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
 -- 현재 사용자와 다른 사용자가 같은 대화방을 공유하는지
 create or replace function public.shares_conversation(other_user_id uuid)
 returns boolean
@@ -115,36 +128,43 @@ alter table public.conversation_members enable row level security;
 alter table public.messages enable row level security;
 alter table public.invitations enable row level security;
 
--- profiles: 본인 + 같은 대화방 참여자
+-- profiles: 본인 + 같은 대화방 참여자 + 관리자(전체)
 create policy "profiles_self_select" on public.profiles
   for select using (auth.uid() = id);
 create policy "profiles_partner_select" on public.profiles
   for select using (public.shares_conversation(id));
+create policy "profiles_admin_select_all" on public.profiles
+  for select using (public.is_admin_user());
 create policy "profiles_self_update" on public.profiles
   for update using (auth.uid() = id);
 
--- conversations: 멤버만 조회/수정, 인증된 사용자는 신규 생성 가능
+-- conversations: 멤버만 조회/수정, 인증된 사용자는 신규 생성. 관리자는 전체 조회.
 create policy "conversations_member_select" on public.conversations
   for select using (public.is_member(id));
+create policy "conversations_admin_select_all" on public.conversations
+  for select using (public.is_admin_user());
 create policy "conversations_authenticated_insert" on public.conversations
   for insert with check (auth.uid() is not null);
 create policy "conversations_member_update" on public.conversations
   for update using (public.is_member(id));
 
--- conversation_members: 본인 행 + 본인이 속한 대화방의 멤버 행 조회
--- 자기 자신을 멤버로 추가/제거 가능 (초대 수락이나 나가기)
+-- conversation_members: 본인 행 + 본인이 속한 대화방의 멤버 행 + 관리자(전체)
 create policy "members_select" on public.conversation_members
   for select using (
     user_id = auth.uid() or public.is_member(conversation_id)
   );
+create policy "members_admin_select_all" on public.conversation_members
+  for select using (public.is_admin_user());
 create policy "members_self_insert" on public.conversation_members
   for insert with check (user_id = auth.uid());
 create policy "members_self_delete" on public.conversation_members
   for delete using (user_id = auth.uid());
 
--- messages: 본인이 멤버인 대화방의 메시지만
+-- messages: 본인이 멤버인 대화방 + 관리자(전체) — 단, 전송은 멤버만
 create policy "messages_member_select" on public.messages
   for select using (public.is_member(conversation_id));
+create policy "messages_admin_select_all" on public.messages
+  for select using (public.is_admin_user());
 create policy "messages_member_insert" on public.messages
   for insert with check (
     sender_id = auth.uid() and public.is_member(conversation_id)
