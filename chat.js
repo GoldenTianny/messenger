@@ -53,6 +53,11 @@ imageInput.addEventListener('change', () => {
   renderPreviews();
 });
 
+// 전송 버튼 탭으로 인한 input 블러 방지 (iOS 키보드 유지)
+form.querySelector('button[type="submit"]').addEventListener('mousedown', (e) => {
+  e.preventDefault();
+});
+
 (async function init() {
   currentUser = await requireAuth('client');
   if (!currentUser) return;
