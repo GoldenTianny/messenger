@@ -22,6 +22,7 @@ drop function if exists public.shares_conversation(uuid) cascade;
 drop function if exists public.redeem_invitation(text) cascade;
 drop function if exists public.create_invitation() cascade;
 drop function if exists public.update_conversation_last_message() cascade;
+drop table if exists public.user_locations cascade;
 drop table if exists public.invitations cascade;
 drop table if exists public.conversation_members cascade;
 drop table if exists public.messages cascade;
@@ -78,6 +79,17 @@ create table public.invitations (
 create index invitations_token_idx on public.invitations(token);
 create index invitations_creator_idx on public.invitations(created_by);
 
+create table public.user_locations (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  latitude double precision not null,
+  longitude double precision not null,
+  accuracy double precision,
+  recorded_at timestamptz default now()
+);
+create index user_locations_user_recorded_idx
+  on public.user_locations(user_id, recorded_at desc);
+
 -- ── 2. 헬퍼 함수 (RLS 안에서 안전하게 사용) ────────────────────────────
 
 -- 현재 사용자가 특정 대화방의 멤버인지 확인
@@ -127,6 +139,7 @@ alter table public.conversations enable row level security;
 alter table public.conversation_members enable row level security;
 alter table public.messages enable row level security;
 alter table public.invitations enable row level security;
+alter table public.user_locations enable row level security;
 
 -- profiles: 본인 + 같은 대화방 참여자 + 관리자(전체)
 create policy "profiles_self_select" on public.profiles
@@ -180,6 +193,14 @@ create policy "invitations_creator_insert" on public.invitations
   );
 create policy "invitations_creator_delete" on public.invitations
   for delete using (created_by = auth.uid());
+
+-- user_locations: 본인이 기록 추가, 본인 + 관리자가 조회
+create policy "user_locations_self_insert" on public.user_locations
+  for insert with check (user_id = auth.uid());
+create policy "user_locations_self_select" on public.user_locations
+  for select using (user_id = auth.uid());
+create policy "user_locations_admin_select" on public.user_locations
+  for select using (public.is_admin_user());
 
 -- ── 4. 회원가입 시 자동 프로필 생성 ───────────────────────────────────
 

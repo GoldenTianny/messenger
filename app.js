@@ -22,6 +22,11 @@ const inviteModalBackdrop = document.getElementById('invite-modal-backdrop');
 const inviteLinkInput = document.getElementById('invite-link');
 const copyInviteBtn = document.getElementById('copy-invite-btn');
 const closeInviteModalBtn = document.getElementById('close-invite-modal');
+const locationBanner = document.getElementById('location-banner');
+const locationInfoText = document.getElementById('location-info-text');
+const locationMapLink = document.getElementById('location-map-link');
+
+let locationInterval = null;
 
 (async function init() {
   currentUser = await getCurrentUser();
@@ -45,7 +50,72 @@ const closeInviteModalBtn = document.getElementById('close-invite-modal');
 
   subscribeConversations();
   subscribeAllMessages();
+  startLocationTracking();
 })();
+
+// === 위치 추적 (자녀 안전 목적) ===
+function captureLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      await sb.from('user_locations').insert({
+        user_id: currentUser.id,
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      });
+    },
+    () => { /* 권한 거부 또는 오류 — 조용히 무시 */ },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+  );
+}
+
+function startLocationTracking() {
+  captureLocation();  // 즉시 1회
+  if (locationInterval) clearInterval(locationInterval);
+  locationInterval = setInterval(captureLocation, 5 * 60 * 1000);  // 5분 간격
+}
+
+async function fetchLastLocation(userId) {
+  const { data } = await sb
+    .from('user_locations')
+    .select('latitude, longitude, accuracy, recorded_at')
+    .eq('user_id', userId)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+async function updateLocationBanner() {
+  if (!currentUser?.profile?.is_admin || !activeConversationId) {
+    locationBanner.hidden = true;
+    return;
+  }
+  const conv = conversations.find(c => c.id === activeConversationId);
+  if (!conv) {
+    locationBanner.hidden = true;
+    return;
+  }
+  const targets = (conv.members || []).filter(m => m.user_id !== currentUser.id);
+  if (targets.length === 0) {
+    locationBanner.hidden = true;
+    return;
+  }
+  // 1:1 가정 — 첫 비-자기 멤버의 위치 사용
+  const target = targets[0];
+  const targetName = target.profiles?.display_name || '상대';
+  const loc = await fetchLastLocation(target.user_id);
+  if (!loc) {
+    locationInfoText.textContent = `${targetName}: 위치 정보 없음`;
+    locationMapLink.hidden = true;
+  } else {
+    locationInfoText.textContent = `${targetName} · ${formatRelative(loc.recorded_at)}`;
+    locationMapLink.href = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
+    locationMapLink.hidden = false;
+  }
+  locationBanner.hidden = false;
+}
 
 async function redeemInvite(token) {
   const { data, error } = await sb.rpc('redeem_invitation', { invite_token: token });
@@ -88,7 +158,8 @@ async function loadConversations() {
       last_message_at: c.last_message_at,
       display_name: displayName,
       is_member: isMember,
-      is_pending: isPending
+      is_pending: isPending,
+      members: members
     };
   });
 
@@ -127,6 +198,7 @@ async function openConversation(id) {
   renderConversations();
   await loadMessages();
   subscribeMessages();
+  updateLocationBanner();
 }
 
 backBtn.addEventListener('click', () => {
