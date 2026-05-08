@@ -152,6 +152,7 @@ form.addEventListener('submit', async (e) => {
   if (!text && !file) return;
 
   textInput.value = '';
+  textInput.focus();
 
   let imageUrl = null;
   if (file) {
